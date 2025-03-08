@@ -12,6 +12,7 @@ from typing import Dict, Tuple, List, Optional, Any
 
 from taskset import *
 from scheduleralgorithm import *
+from CyclicSchedulerAlgorithm import *
 from schedule import ScheduleInterval, Schedule
 from display import SchedulingDisplay
 
@@ -23,7 +24,7 @@ from collections import defaultdict
 #############################################################
 # IlpScheduler class                                        #
 #############################################################
-class IlpScheduler(SchedulerAlgorithm):
+class IlpScheduler(CyclicSchedulerAlgorithm):
     """
     An ILP-based scheduler that maps task jobs to valid time frames
     in order to construct a feasible schedule.
@@ -38,83 +39,6 @@ class IlpScheduler(SchedulerAlgorithm):
           to the set of frames in which it can be scheduled.
         """
         super().__init__(taskSet)
-        self.hyperPeriod: int = self._getHyperPeriod()
-        self.frameSize: int = self._getValidFrameSize()
-        # Build valid frame set for each job:
-        # For each job (i,j), validFrameMap[(i,j)] is a list of frame indices k
-        # such that the whole frame k lies within the job's allowable time window.
-        self.validFrameMap: Dict[Tuple[int, int], List[int]] = (
-            self._buildValidFrameSet()
-        )
-
-    def _getHyperPeriod(self) -> int:
-        """
-        Calculate the hyperperiod, which is the least common multiple (LCM)
-        of all task periods.
-        :return: The hyperperiod as an integer.
-        """
-        return lcm(*[int(t.period) for t in self.taskSet.tasks.values()])
-
-    def _buildValidFrameSet(self) -> Dict[Tuple[int, int], List[int]]:
-        """
-        Build a mapping of valid frames for each job.
-        For each job, determine the frames k where the entire frame fits
-        into the job's execution window: [(j-1)*period, j*period].
-        :return: Dictionary mapping (task id, job id) to a list of valid frame indices.
-        """
-        valid_frame: Dict[Tuple[int, int], List[int]] = {}
-        numFrames: int = self.hyperPeriod // self.frameSize
-
-        # NOTE: The original code uses 'taskSet.jobs' without 'self'.
-        # We assume that 'self.taskSet.jobs' is the intended reference.
-        for job in self.taskSet.jobs:
-            i: int = job.task.id
-            j: int = job.id
-            valid_frame[(i, j)] = []
-            for k in range(1, numFrames + 1):
-                p: int = job.task.period
-                # Check if frame k lies completely within the job's period window.
-                if (k - 1) * self.frameSize >= ((j - 1) * p) and k * self.frameSize <= (
-                    j * p
-                ):
-                    valid_frame[(i, j)].append(k)
-        return valid_frame
-
-    def _isValidFrameSize(self, frameSize: int) -> bool:
-        """
-        Check if a given frame size is valid.
-        A valid frame size must:
-         - Divide the hyperperiod evenly.
-         - Be at least as large as each task's worst-case execution time (wcet).
-         - Satisfy the constraint: 2*frameSize - gcd(task.period, frameSize) <= task.relativeDeadline
-        :param frameSize: The candidate frame size.
-        :return: True if valid, False otherwise.
-        """
-        # Frame size must divide the hyperperiod.
-        if self.hyperPeriod % frameSize != 0:
-            return False
-
-        # Check frame size against each task's wcet and deadline constraints.
-        for task in self.taskSet.tasks.values():
-            if frameSize < task.wcet:
-                return False
-            if (
-                2 * frameSize - gcd(int(task.period), int(frameSize))
-            ) > task.relativeDeadline:
-                return False
-
-        return True
-
-    def _getValidFrameSize(self) -> int:
-        """
-        Determine a valid frame size by iterating from the hyperperiod downwards.
-        The first candidate frame size that satisfies all constraints is returned.
-        :return: A valid frame size as an integer.
-        """
-        for i in range(self.hyperPeriod, 1, -1):
-            if self._isValidFrameSize(i):
-                return i
-        raise ValueError("No valid frame size found.")
 
     def _makeAssignmentDecision(self) -> Optional[Dict[int, List[Job]]]:
         """
