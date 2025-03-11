@@ -1,6 +1,6 @@
 from taskset import *
 from scheduleralgorithm import *
-from schedule import Schedule
+from schedule import Schedule, ScheduleInterval
 from typing import Dict, Tuple, List, Optional, Any
 
 from math import lcm, gcd
@@ -17,6 +17,7 @@ class CyclicSchedulerAlgorithm(SchedulerAlgorithm):
         super().__init__(taskSet)
         self.hyperPeriod: int = self._getHyperPeriod()
         self.frameSize: int = self._getValidFrameSize()
+        self.numFrames: int = self.hyperPeriod // self.frameSize
         # Build valid frame set for each job:
         # For each job (i,j), validFrameMap[(i,j)] is a list of frame indices k
         # such that the whole frame k lies within the job's allowable time window.
@@ -40,13 +41,12 @@ class CyclicSchedulerAlgorithm(SchedulerAlgorithm):
         :return: Dictionary mapping (task id, job id) to a list of valid frame indices.
         """
         valid_frame: Dict[Tuple[int, int], List[int]] = {}
-        numFrames: int = self.hyperPeriod // self.frameSize
 
         for job in self.taskSet.jobs:
             i: int = job.task.id
             j: int = job.id
             valid_frame[(i, j)] = []
-            for k in range(1, numFrames + 1):
+            for k in range(1, self.numFrames + 1):
                 p: int = job.task.period
                 # Check if frame k lies completely within the job's period window.
                 if (k - 1) * self.frameSize >= ((j - 1) * p) and k * self.frameSize <= (
@@ -112,4 +112,46 @@ class CyclicSchedulerAlgorithm(SchedulerAlgorithm):
         :param endTime: The ending time (or a deadline) for the schedule.
         :return: The constructed schedule object, or None if schedule is invalid.
         """
-        raise NotImplementedError()
+        intervalToJobs: Optional[Dict[int, List[Job]]] = self._makeAssignmentDecision()
+
+        # If no feasible assignment is found, return None.
+        if intervalToJobs is None:
+            return None
+
+        time: float = startTime
+        self.schedule.startTime = time
+
+        # Process each frame in the hyperperiod.
+        for k in range(1, self.numFrames + 1):
+            jobs: List[Job] = intervalToJobs[k]
+            # Sort jobs based on task id for consistency.
+            jobs.sort(key=lambda j: j.task.id)
+            for job in jobs:
+                # Validate that the current time does not exceed the end of the frame.
+                if time > k * self.frameSize:
+                    print("Invalid Schedule")
+                    return None  # type: ignore
+                # Create an interval for the job and update time.
+                interval: ScheduleInterval = ScheduleInterval()
+                interval.initialize(time, job, False)
+                self.schedule.addInterval(interval)
+                time += job.remainingTime
+
+            # If the frame is not fully utilized, add an idle interval.
+            if time < k * self.frameSize:
+                interval: ScheduleInterval = ScheduleInterval()
+                interval.initialize(time, None, False)
+                self.schedule.addInterval(interval)
+                time = k * self.frameSize
+
+        # Add a final idle interval until the specified end time.
+        finalInterval: ScheduleInterval = ScheduleInterval()
+        finalInterval.initialize(endTime, None, False)
+        self.schedule.addInterval(finalInterval)
+
+        # Post-process the schedule to finalize interval end times and mark job completions.
+        latestDeadline: float = max([job.deadline for job in self.taskSet.jobs])
+        adjustedEndTime: float = max(latestDeadline, float(endTime))
+        self.schedule.postProcessIntervals(adjustedEndTime)
+
+        return self.schedule
