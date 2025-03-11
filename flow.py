@@ -15,7 +15,7 @@ from scheduleralgorithm import *
 from CyclicSchedulerAlgorithm import *
 from schedule import ScheduleInterval, Schedule
 from display import SchedulingDisplay
-from graph import edmondsKarp
+from graph import edmondsKarp, NetworkDisplay
 
 from gurobipy import Model, GRB
 from math import lcm, gcd
@@ -70,38 +70,42 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
         :return: A mapping from frame index k to the list of jobs assigned to that frame,
                  or None if no feasible solution is found.
         """
-        capacities = [[0 for i in range(self.numNodes)] for j in range(self.numNodes)]
-        neighbors = defaultdict(list)
+        self.capacityMap = [
+            [0 for i in range(self.numNodes)] for j in range(self.numNodes)
+        ]
+        self.neighbors = defaultdict(list)
         sourceIndex = self.nodeIdToIndex[(-2, 0)]
         sinkIndex = self.nodeIdToIndex[(-2, 1)]
 
         for k in range(1, self.numFrames + 1):
             frameIndex = self.nodeIdToIndex[(-1, k)]
-            capacities[sourceIndex][frameIndex] = self.frameSize
-            neighbors[sourceIndex].append(frameIndex)
-            neighbors[frameIndex].append(sourceIndex)
+            self.capacityMap[sourceIndex][frameIndex] = self.frameSize
+            self.neighbors[sourceIndex].append(frameIndex)
+            self.neighbors[frameIndex].append(sourceIndex)
 
         for job in self.taskSet.jobs:
             jobIndex = self.nodeIdToIndex[(job.task.id, job.id)]
-            capacities[jobIndex][sinkIndex] = int(job.task.wcet)
-            neighbors[jobIndex].append(sinkIndex)
-            neighbors[sinkIndex].append(jobIndex)
+            self.capacityMap[jobIndex][sinkIndex] = int(job.task.wcet)
+            self.neighbors[jobIndex].append(sinkIndex)
+            self.neighbors[sinkIndex].append(jobIndex)
 
         for (i, j), validFrames in self.validFrameMap.items():
             for k in validFrames:
                 frameIndex = self.nodeIdToIndex[(-1, k)]
                 jobIndex = self.nodeIdToIndex[(i, j)]
-                capacities[frameIndex][jobIndex] = self.frameSize
-                neighbors[frameIndex].append(jobIndex)
-                neighbors[jobIndex].append(frameIndex)
+                self.capacityMap[frameIndex][jobIndex] = self.frameSize
+                self.neighbors[frameIndex].append(jobIndex)
+                self.neighbors[jobIndex].append(frameIndex)
 
-        print(f"capacities: {capacities}")
+        print(f"capacityMap: {self.capacityMap}")
         print()
-        print(f"neighbors {neighbors}")
+        print(f"neighbors {self.neighbors}")
 
-        (maxFlow, flowMap) = edmondsKarp(capacities, neighbors, 0, 1)
-        print(f"maxFlow: {maxFlow}")
-        print(f"flowMap: {flowMap}")
+        (self.maxFlow, self.flowMap) = edmondsKarp(
+            self.capacityMap, self.neighbors, 0, 1
+        )
+        print(f"maxFlow: {self.maxFlow}")
+        print(f"flowMap: {self.flowMap}")
 
 
 #############################################################
@@ -116,7 +120,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "tasksets/ce_test1.json"
+        file_path = "tasksets/ce_test2.json"
 
     # Load the task set data from the specified file.
     with open(file_path) as json_data:
@@ -138,6 +142,8 @@ if __name__ == "__main__":
     print(f"ilp.nodeIdToIndex Set: {flow.nodeIdToIndex}")
 
     flow._makeAssignmentDecision()
+    display = NetworkDisplay(12, 10, flow)
+    display.run()
     # # Build the complete schedule from time 0 to 20.
     # schedule = ilp.buildSchedule(0, 20)
 
