@@ -64,12 +64,7 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
             i += 1
         return indexToNodeId
 
-    def _makeAssignmentDecision(self) -> Optional[Dict[int, List[Job]]]:
-        """
-        Formulate and solve the Network Flow model for job-to-frame assignment.
-        :return: A mapping from frame index k to the list of jobs assigned to that frame,
-                 or None if no feasible solution is found.
-        """
+    def runFlowAlgorithm(self):
         self.capacityMap = [
             [0 for i in range(self.numNodes)] for j in range(self.numNodes)
         ]
@@ -97,15 +92,107 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
                 self.neighbors[frameIndex].append(jobIndex)
                 self.neighbors[jobIndex].append(frameIndex)
 
-        print(f"capacityMap: {self.capacityMap}")
-        print()
-        print(f"neighbors {self.neighbors}")
+        self.maxFlow, self.flowMap = edmondsKarp(self.capacityMap, self.neighbors, 0, 1)
 
-        (self.maxFlow, self.flowMap) = edmondsKarp(
-            self.capacityMap, self.neighbors, 0, 1
-        )
-        print(f"maxFlow: {self.maxFlow}")
-        print(f"flowMap: {self.flowMap}")
+        totalWorkNeeded = sum([job.task.wcet for job in self.taskSet.jobs])
+
+        assert (
+            self.maxFlow == totalWorkNeeded
+        ), "Network Flow Failed to find a preemptive schedule."
+
+    def runBestFitDescentApproximation(self):
+        assert (
+            self.flowMap
+        ), "flowMap not initiated, please call runFlowAlgorithm first."
+
+        preemptedJobToFrames = {}
+        for job in self.taskSet.jobs:
+            jobIndex = self.nodeIdToIndex[(job.task.id, job.id)]
+            assignedFrameIndices = [
+                i for i in range(len(self.flowMap)) if self.flowMap[i][jobIndex] > 0
+            ]
+            if len(assignedFrameIndices) > 1:
+                preemptedJobToFrames[jobIndex] = assignedFrameIndices
+
+        for jobIndex, frameIndices in preemptedJobToFrames.items():
+            for frameIndex in frameIndices:
+                curFlow = self.flowMap[frameIndex][jobIndex]
+                self.flowMap[frameIndex][jobIndex] = 0
+                self.flowMap[self.nodeIdToIndex[(-2, 0)]][frameIndex] -= curFlow
+                self.flowMap[jobIndex][self.nodeIdToIndex[(-2, 1)]] -= curFlow
+        # REVIEW - Remove for final version
+        display = NetworkDisplay(12, 10, self)
+        display.run(filename=f"./output/flow_reduced.png")
+        # sort all preempted jobs by ascending order of their periods
+        jobIds = [
+            self.indexToNodeId[i]
+            for i in sorted(
+                list(preemptedJobToFrames.keys()),
+                key=lambda i: self.taskSet.getTaskById(self.indexToNodeId[i][0]).period,
+            )
+        ]
+
+        sourceIndex = self.nodeIdToIndex[(-2, 0)]
+        sinkIndex = self.nodeIdToIndex[(-2, 1)]
+
+        for jobId in jobIds:
+            jobIndex = self.nodeIdToIndex[jobId]
+
+            validFrames = self.validFrameMap[jobId]
+            frameIndices = [self.nodeIdToIndex[(-1, frame)] for frame in validFrames]
+
+            wcet = self.taskSet.getTaskById(jobId[0]).wcet
+
+            if wcet.is_integer():
+                wcet = int(wcet)
+
+            frameIndices = sorted(
+                [
+                    i
+                    for i in frameIndices
+                    if self.capacityMap[sourceIndex][i] - self.flowMap[sourceIndex][i]
+                    >= wcet
+                ],
+                key=lambda i: self.capacityMap[sourceIndex][i]
+                - self.flowMap[sourceIndex][i],
+            )
+
+            assert (
+                len(frameIndices) > 0
+            ), f"BestFitDescent Failed to match job {jobId} to a frame."
+
+            assignedFrameIndex = frameIndices[0]
+
+            self.flowMap[sourceIndex][assignedFrameIndex] += wcet
+            self.flowMap[assignedFrameIndex][jobIndex] += wcet
+            self.flowMap[jobIndex][sinkIndex] += wcet
+
+    def _makeAssignmentDecision(self) -> Optional[Dict[int, List[Job]]]:
+        """
+        Formulate and solve the Network Flow model for job-to-frame assignment.
+        :return: A mapping from frame index k to the list of jobs assigned to that frame,
+                 or None if no feasible solution is found.
+        """
+        try:
+            self.runFlowAlgorithm()
+            display = NetworkDisplay(12, 10, self)
+            display.run(filename=f"./output/flow_1.png")
+
+            self.runBestFitDescentApproximation()
+            display = NetworkDisplay(12, 10, self)
+            display.run(filename=f"./output/flow_2.png")
+        except AssertionError as e:
+            print(e)
+            return None
+
+        intervalToJobs: Dict[int, List[Job]] = defaultdict(list)
+        for k in range(1, self.numFrames + 1):
+            frameIndex = self.nodeIdToIndex[(-1, k)]
+            row = self.flowMap[frameIndex]
+            jobIds = [self.indexToNodeId[i] for i in range(len(row)) if row[i] > 0]
+            for i, j in jobIds:
+                intervalToJobs[k].append(self.taskSet.getTaskById(i).getJobById(j))
+        return intervalToJobs
 
 
 #############################################################
@@ -120,7 +207,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "tasksets/ce_test2.json"
+        file_path = "tasksets/ce_test1.json"
 
     # Load the task set data from the specified file.
     with open(file_path) as json_data:
@@ -141,20 +228,18 @@ if __name__ == "__main__":
     print(f"ilp.indexToNodeId Set: {flow.indexToNodeId}")
     print(f"ilp.nodeIdToIndex Set: {flow.nodeIdToIndex}")
 
-    flow._makeAssignmentDecision()
-    display = NetworkDisplay(12, 10, flow)
-    display.run()
+    schedule = flow.buildSchedule(0, 100)
     # # Build the complete schedule from time 0 to 20.
     # schedule = ilp.buildSchedule(0, 20)
 
-    # # Print the schedule intervals (including idle intervals).
-    # schedule.printIntervals(displayIdle=True)
+    # Print the schedule intervals (including idle intervals).
+    schedule.printIntervals(displayIdle=True)
 
-    # # Validate the schedule by checking worst-case execution times and overall feasibility.
-    # print("\n// Validating the schedule:")
-    # schedule.checkWcets()
-    # schedule.checkFeasibility()
+    # Validate the schedule by checking worst-case execution times and overall feasibility.
+    print("\n// Validating the schedule:")
+    schedule.checkWcets()
+    schedule.checkFeasibility()
 
-    # # Display the schedule graphically.
-    # display = SchedulingDisplay(width=800, height=480, fps=33, scheduleData=schedule)
-    # display.run()
+    # Display the schedule graphically.
+    display = SchedulingDisplay(width=800, height=480, fps=33, scheduleData=schedule)
+    display.run()

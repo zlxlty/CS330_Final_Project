@@ -108,7 +108,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "tasksets/ce_test2.json"
+        file_path = "tasksets/ce_test3.json"
 
     # Load the task set data from the specified file.
     with open(file_path) as json_data:

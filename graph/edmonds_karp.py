@@ -4,8 +4,7 @@ def edmondsKarp(capacity, neighbors, start, end):
     flows = [[0 for i in range(length)] for j in range(length)]
     while True:
         max, parent = breadthFirstSearch(capacity, neighbors, flows, start, end)
-        print(f"max: {max}")
-        print(f"parent: {parent}")
+
         if max == 0:
             break
         flow = flow + max

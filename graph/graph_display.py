@@ -7,7 +7,7 @@ class NetworkDisplay(object):
         self.G = nx.DiGraph()
         self.width = width
         self.height = height
-        self.interval = 0.5
+        self.label_spacing = 0.125
         self.flowScheduler = flowScheduler
 
         self.defaultColor = "lightgrey"
@@ -76,7 +76,25 @@ class NetworkDisplay(object):
             for u, v, data in self.G.edges(data=True)
         }
 
-    def run(self):
+        self.source_sink_edge_labels = {
+            (u, v): (f"{data['flow']}/{data['capacity']}")
+            for u, v, data in self.G.edges(data=True)
+            if u == (-2, 0) or v == (-2, 1)
+        }
+
+        self.edge_labels = []
+        num_edge_labels = int(1 / self.label_spacing) - 1
+
+        for i in range(num_edge_labels):
+            edge_labels = {
+                (u, v): f"{data['flow']}"
+                for u, v, data in self.G.edges(data=True)
+                if u[0] == -1 and (u[1] % num_edge_labels == i)
+            }
+
+            self.edge_labels.append(edge_labels)
+
+    def run(self, filename=None):
         node_colors = [self.G.nodes.get(nodeId)["color"] for nodeId in self.G.nodes]
 
         # Draw the graph
@@ -92,9 +110,21 @@ class NetworkDisplay(object):
             arrowsize=20,
         )
         nx.draw_networkx_edge_labels(
-            self.G, self.pos, edge_labels=self.edge_labels, label_pos=0.25
+            self.G, self.pos, edge_labels=self.source_sink_edge_labels
         )
+
+        for i, edge_labels in enumerate(self.edge_labels):
+            nx.draw_networkx_edge_labels(
+                self.G,
+                self.pos,
+                edge_labels=edge_labels,
+                label_pos=self.label_spacing * (i + 1),
+            )
 
         plt.title("Network Flow Schedule")
         plt.axis("off")
-        plt.show()
+
+        if filename:
+            plt.savefig(filename, format="png", dpi=600)
+        else:
+            plt.show()
