@@ -14,7 +14,7 @@ class NetworkDisplay(object):
         self.frameColor = "lightblue"
         self.jobColor = "lightgreen"
         self.jobWarningColor = "yellow"
-        self.jobErrorColor = "red"
+        self.jobErrorColor = "pink"
 
         self._buildGraph()
 

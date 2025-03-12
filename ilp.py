@@ -108,7 +108,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "tasksets/ce_test3.json"
+        file_path = "tasksets/0.8/10/ce_test_0.json"
 
     # Load the task set data from the specified file.
     with open(file_path) as json_data:
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     print(intervals)
 
     # Build the complete schedule from time 0 to 20.
-    schedule = ilp.buildSchedule(0, 20)
+    schedule = ilp.buildSchedule(0, 72)
 
     # Print the schedule intervals (including idle intervals).
     schedule.printIntervals(displayIdle=True)
@@ -142,5 +142,7 @@ if __name__ == "__main__":
     schedule.checkFeasibility()
 
     # Display the schedule graphically.
-    display = SchedulingDisplay(width=800, height=480, fps=33, scheduleData=schedule)
+    display = SchedulingDisplay(
+        width=800, height=480, fps=33, frameSize=6, scheduleData=schedule
+    )
     display.run()

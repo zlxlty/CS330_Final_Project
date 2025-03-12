@@ -29,7 +29,7 @@ LINE_WIDTH = 2
 
 
 class XAxis(object):
-    def __init__(self, startTime, endTime, w, h):
+    def __init__(self, startTime, endTime, w, h, frameSize):
         self.build_axis(w, h)
 
         totalTime = endTime - startTime
@@ -37,6 +37,10 @@ class XAxis(object):
         tickLabelTime = self.calculate_tick_label_time(totalTime)
         self.build_tick_marks(totalTime, tickTime, w, h)
         self.build_labels(totalTime, tickLabelTime, w, h)
+
+        ### ADDED: build vertical grid lines every 25 seconds
+        self.grid_lines = []
+        self.build_vertical_grid_lines(startTime, endTime, frameSize, w, h)
 
     def build_axis(self, w, h):
         # Draw a thin black horizontal line
@@ -60,8 +64,10 @@ class XAxis(object):
             return 1.0
         elif totalTime <= 16.0:
             return 2.0
+        elif totalTime <= 90:
+            return 9.0
         else:
-            return 5.0
+            return 10.0
 
     def calculate_tick_label_time(self, totalTime):
         if totalTime <= 2.0:
@@ -74,8 +80,10 @@ class XAxis(object):
             return 1.0
         elif totalTime <= 16.0:
             return 2.0
+        elif totalTime <= 90:
+            return 9.0
         else:
-            return 5.0
+            return 10.0
 
     def build_tick_marks(self, totalTime, tickTime, w, h):
         # Put a tick every tickTime seconds
@@ -118,13 +126,44 @@ class XAxis(object):
         # Give the axis a label
         px = w / 2
         py = h - (BUFFER_BOTTOM * 0.4)
-        label = ("Time (seconds)", (px, py), font)
+        label = ("Time (ms)", (px, py), font)
         self.labels.append(label)
+
+    ### ADDED ###
+    def build_vertical_grid_lines(self, startTime, endTime, interval, w, h):
+        """
+        Build vertical lines (top-to-bottom) at every 'interval' seconds.
+        """
+        totalTime = endTime - startTime
+        plotWidth = w - BUFFER_LEFT - BUFFER_RIGHT
+
+        # How many 25-second segments fit in totalTime?
+        numLines = int(totalTime // interval)
+
+        for i in range(1, numLines + 1):
+            xSec = startTime + i * interval
+            if xSec > endTime:
+                break
+
+            # Compute x-position in pixels
+            px = BUFFER_LEFT + ((xSec - startTime) / totalTime) * plotWidth
+
+            # Build a line from top to bottom
+            p1 = (px, BUFFER_TOP)
+            p2 = (px, h - BUFFER_BOTTOM)
+
+            # Store (startPos, endPos, lineWidth)
+            self.grid_lines.append((p1, p2, 1))  # line width = 1
 
     def draw(self, surface):
         # Draw the axis line
         p1, p2, lineWidth = self.axis
         pygame.draw.line(surface, SchedulingDisplayColors.TIME_BAR, p1, p2, lineWidth)
+
+        # 2) Draw the vertical grid lines (in blue)
+        for line in self.grid_lines:
+            p1, p2, lw = line
+            pygame.draw.line(surface, (0, 0, 255), p1, p2, lw)
 
         # Draw the tick marks
         for tick in self.ticks:
@@ -458,9 +497,9 @@ class SchedulingDisplayColors(object):
 
 
 class SchedulingDisplay(object):
-    def __init__(self, width=1080, height=720, fps=30, scheduleData=None):
+    def __init__(self, width=1080, height=720, frameSize=25, fps=30, scheduleData=None):
         pygame.init()
-        pygame.display.set_caption("CS 330 Scheduling Display")
+        pygame.display.set_caption("Cyclic Executive Scheduling Display")
 
         self.width = width
         self.height = height
@@ -474,6 +513,8 @@ class SchedulingDisplay(object):
 
         self.clock = pygame.time.Clock()
         self.fps = fps
+
+        self.frameSize = frameSize
 
         self.scheduleData = scheduleData
 
@@ -581,6 +622,7 @@ class SchedulingDisplay(object):
                 self.scheduleData.endTime,
                 self.width,
                 self.height,
+                self.frameSize,
             )
             xaxis.draw(self.background)
 

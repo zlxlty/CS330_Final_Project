@@ -18,7 +18,7 @@ from display import SchedulingDisplay
 from graph import edmondsKarp, NetworkDisplay
 
 from gurobipy import Model, GRB
-from math import lcm, gcd
+from math import lcm, gcd, isclose
 from collections import defaultdict
 
 
@@ -31,7 +31,7 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
     in order to construct a feasible schedule.
     """
 
-    def __init__(self, taskSet: TaskSet) -> None:
+    def __init__(self, taskSet: TaskSet, saveImage=False) -> None:
         """
         Initialize the network flow scheduler.
         """
@@ -50,6 +50,8 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
         self.nodeIdToIndex: Dict[Tuple[int, int], int] = {
             v: k for k, v in self.indexToNodeId.items()
         }
+
+        self.saveImage = saveImage
 
     def _makeIndexToNodeIdMap(self) -> Dict[int, Tuple[int, int]]:
         indexToNodeId: Dict[int, Tuple[int, int]] = {0: (-2, 0), 1: (-2, 1)}
@@ -80,7 +82,7 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
 
         for job in self.taskSet.jobs:
             jobIndex = self.nodeIdToIndex[(job.task.id, job.id)]
-            self.capacityMap[jobIndex][sinkIndex] = int(job.task.wcet)
+            self.capacityMap[jobIndex][sinkIndex] = job.task.wcet
             self.neighbors[jobIndex].append(sinkIndex)
             self.neighbors[sinkIndex].append(jobIndex)
 
@@ -96,8 +98,12 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
 
         totalWorkNeeded = sum([job.task.wcet for job in self.taskSet.jobs])
 
-        assert (
-            self.maxFlow == totalWorkNeeded
+        print(f"maxflow: {self.maxFlow}")
+        print(totalWorkNeeded)
+        print(self.capacityMap)
+
+        assert isclose(
+            totalWorkNeeded, self.maxFlow
         ), "Network Flow Failed to find a preemptive schedule."
 
     def runBestFitDescentApproximation(self):
@@ -120,9 +126,10 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
                 self.flowMap[frameIndex][jobIndex] = 0
                 self.flowMap[self.nodeIdToIndex[(-2, 0)]][frameIndex] -= curFlow
                 self.flowMap[jobIndex][self.nodeIdToIndex[(-2, 1)]] -= curFlow
-        # REVIEW - Remove for final version
-        display = NetworkDisplay(12, 10, self)
-        display.run(filename=f"./output/flow_reduced.png")
+
+        if self.saveImage:
+            display = NetworkDisplay(12, 10, self)
+            display.run(filename=f"./output/flow_reduced.png")
         # sort all preempted jobs by ascending order of their periods
         jobIds = [
             self.indexToNodeId[i]
@@ -175,12 +182,16 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
         """
         try:
             self.runFlowAlgorithm()
-            display = NetworkDisplay(12, 10, self)
-            display.run(filename=f"./output/flow_1.png")
+
+            if self.saveImage:
+                display = NetworkDisplay(12, 10, self)
+                display.run(filename=f"./output/flow_1.png")
 
             self.runBestFitDescentApproximation()
-            display = NetworkDisplay(12, 10, self)
-            display.run(filename=f"./output/flow_2.png")
+
+            if self.saveImage:
+                display = NetworkDisplay(12, 10, self)
+                display.run(filename=f"./output/flow_2.png")
         except AssertionError as e:
             print(e)
             return None
@@ -207,7 +218,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "tasksets/ce_test1.json"
+        file_path = "tasksets/0.8/10/ce_test_0.json"
 
     # Load the task set data from the specified file.
     with open(file_path) as json_data:
@@ -221,14 +232,14 @@ if __name__ == "__main__":
     taskSet.printJobs()
 
     # Create an instance of the ILP scheduler.
-    flow = NetworkFlowScheduler(taskSet)
+    flow = NetworkFlowScheduler(taskSet, saveImage=True)
     print(f"ilp.hyperPeriod: {flow.hyperPeriod}")
     print(f"ilp.frameSize: {flow.frameSize}")
     print(f"ilp.validFrame Set: {flow.validFrameMap}")
     print(f"ilp.indexToNodeId Set: {flow.indexToNodeId}")
     print(f"ilp.nodeIdToIndex Set: {flow.nodeIdToIndex}")
 
-    schedule = flow.buildSchedule(0, 100)
+    schedule = flow.buildSchedule(0, 72)
     # # Build the complete schedule from time 0 to 20.
     # schedule = ilp.buildSchedule(0, 20)
 
@@ -241,5 +252,11 @@ if __name__ == "__main__":
     schedule.checkFeasibility()
 
     # Display the schedule graphically.
-    display = SchedulingDisplay(width=800, height=480, fps=33, scheduleData=schedule)
+    display = SchedulingDisplay(
+        width=800,
+        height=480,
+        frameSize=6,
+        fps=33,
+        scheduleData=schedule,
+    )
     display.run()
