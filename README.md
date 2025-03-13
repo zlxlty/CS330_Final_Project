@@ -88,8 +88,9 @@ The project workflow is as follows:
     python flow.py
     ```
     You can expect a taskset scheduling chart similar to the following picture for `ce_test1` popping up on your screen.
-
-    <img src="example_output/test1_flow_schedule.png" alt="Schedule for ce_test1" width="500" style="display: block; margin-left: auto; margin-right: auto;">  
+    <div align="center">
+       <img src="example_output/test1_flow_schedule.png" alt="Schedule for ce_test1" width="500">  
+    </div>
     **`Integer Linear Programming Approach`**  
     **Description:**  
     Alternatively, you can use `ilp.py` to directly construct a non-preemptive schedule. It uses `gurobipy` integer linear programming [solver](https://pypi.org/project/gurobipy/) to find a feasible solution to the ILP corresponding to our job assignment problem.  
@@ -100,9 +101,9 @@ The project workflow is as follows:
     ```
     to run the ilp algorithm.  
     For `ce_test2`, you show expect to see a schedule similar to the following:
-
-    <img src="example_output/test2_ilp_schedule.png" alt="Schedule for ce_test2" width="500" style="display: block; margin-left: auto; margin-right: auto;">  
-
+   <div align="center">
+       <img src="example_output/test2_ilp_schedule.png" alt="Schedule for ce_test2" width="500">  
+   </div>
 3. **Run Experiments on Generated Tasksets** 
    Use `run_test.py` to run the aforementioned algorithms on all the tasksets generated in step 1. In the main section of run_test.py, add a call to `run_test(nTasks, [NetworkFlowScheduler, IlpScheduler])`, where `nTasks` specifies the number of tasks in the taskset you want to test. Each call will generate a result json file in the `output` folder with name similar to `NetworkFlowScheduler_0.85_18_results.json` with content like
    ```json
