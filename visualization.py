@@ -231,5 +231,6 @@ def success_rate_v_task_size(utilization=0.85, nTasks_values=range(5, 26, 5)):
     plt.show()
 
 
-# success_rate_v_utilization(nTasks=60)
-success_rate_v_task_size(utilization=0.5, nTasks_values=range(20, 61, 10))
+if __name__ == "__main__":
+    success_rate_v_utilization(nTasks=20)
+    # success_rate_v_task_size(utilization=0.5, nTasks_values=range(20, 61, 10))
