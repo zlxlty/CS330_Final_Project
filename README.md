@@ -88,7 +88,7 @@ The project workflow is as follows:
     python flow.py
     ```
     You can expect a taskset scheduling chart similar to the following picture for `ce_test1` popping up on your screen.
-    
+
     <img src="example_output/test1_flow_schedule.png" alt="Schedule for ce_test1" width="500" style="display: block; margin-left: auto; margin-right: auto;">  
     **`Integer Linear Programming Approach`**  
     **Description:**  
@@ -124,12 +124,15 @@ The project workflow is as follows:
 4. **Generate Data Visualization** 
    Finally, we can visualize the data in `data.json` in two different ways by using `visualization.py`.
    `success_rate_v_utilization(nTasks=20)` will generate the a graph similar to this:
-
-   <img src="example_output/sr_et_v_u_n20.png" alt="Visualization 1" width="500" style="display: block; margin-left: auto; margin-right: auto;">  
+   <div align="center">
+      <img src="example_output/sr_et_v_u_n20.png" alt="Visualization 1" width="500">  
+   </div>
 
    `success_rate_v_task_size(utilization=0.5, nTasks_values=range(20, 61, 10))` will generate the a graph similar to this:
 
-   <img src="example_output/sr_rt_v_n_u0_5.png" alt="Visualization 2" width="500" style="display: block; margin-left: auto; margin-right: auto;">  
+   <div align="center">
+      <img src="example_output/sr_rt_v_n_u0_5.png" alt="Visualization 2" width="500">  
+   </div>
 
    You can view more example visualizations in `example_output` folder.
    
