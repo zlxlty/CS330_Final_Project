@@ -59,17 +59,8 @@ def consolidate_json_files():
 
 def run_test(nTasks, schedulers):
     curU = 0.1
-    # outputs = {}
-    # for scheduler in schedulers:
-    #     name = scheduler.__name__
-    #     outputs[name] = {
-    #         "Scheduler": name,
-    #         "nTaskSets": 400,
-    #         "data": [],
-    #     }
 
     while curU < 1:
-        # for i in range(5):
         curU = round(curU, 3)
         target_folder = os.path.join(taskset_dir, str(curU), str(nTasks))
         assert os.path.isdir(target_folder), f"Folder does not exist: {target_folder}"
@@ -94,15 +85,10 @@ def run_test(nTasks, schedulers):
                 schedulerIns = schedulerCls(taskSet)
 
                 success, duration = test_scheduler(schedulerIns)
-                # print(f"success: {success}")
-                # return None
                 results[name]["successCount"] += success
                 results[name]["totalTime"] += duration
 
         for name in results.keys():
-            # target_dir = os.makedirs(
-            #     os.path.join(output_dir, name), exist_ok=True
-            # )
             file_path = f"{output_dir}/{name}_{curU}_{nTasks}_results.json"
 
             with open(file_path, "w") as json_file:
@@ -111,6 +97,10 @@ def run_test(nTasks, schedulers):
 
 
 if __name__ == "__main__":
-    # run_test(15, [NetworkFlowScheduler, IlpScheduler])
+    for nTasks in range(5, 20, 5):
+        run_test(nTasks, [NetworkFlowScheduler, IlpScheduler])
+
+    for nTasks in range(20, 61, 10):
+        run_test(nTasks, [NetworkFlowScheduler, IlpScheduler])
 
     consolidate_json_files()

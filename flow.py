@@ -135,7 +135,8 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
             self.indexToNodeId[i]
             for i in sorted(
                 list(preemptedJobToFrames.keys()),
-                key=lambda i: self.taskSet.getTaskById(self.indexToNodeId[i][0]).period,
+                key=lambda i: self.taskSet.getTaskById(self.indexToNodeId[i][0]).wcet,
+                reverse=True,
             )
         ]
 
