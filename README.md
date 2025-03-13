@@ -19,7 +19,7 @@ The project workflow is as follows:
 
 - **Python:** 3.12.8  
 - **Environment Manager:** [Poetry](https://python-poetry.org/)  
-- **Platform:** MacBook Air with an M2 chip (other platforms should work as well)
+- **Platform:** MacOS Sequoia v15.3.1 with an M2 chip
 
 ## Installation
 
@@ -80,7 +80,7 @@ The project workflow is as follows:
     **Description:**  
     `flow.py` creates job assignments in two steps.  
     i) First, it will use Edmonds Karp Network Flow algorithm to create a preemptive job assignment. A visualization of such assignment will be stored in `output/flow_preemptive.png` with preempted job highlighted in `yellow`. If a job doesn't receive execution time equal to its WCET, its corresponding node will be marked in `red`.  
-    ii) Then, we will store and remove preempted jobs from the previous assignment and try to fit each of them into a single frame using Best Fit Descend algorithm. If a fit is found, the modified flow graph will be stored in `output/flow_assigned.png`.
+    ii) Then, we will store and remove preempted jobs from the previous assignment and try to fit each of them into a single frame using Best Fit Descend algorithm. If a fit is found, the modified flow graph will be stored in `output/flow_assigned.png`.  
     [**IMPORTANT!**] Step ii may fail to fit all jobs. In this case, the program will `sys.exit(1)`  
     **How To Run**:
     Auto-generated taskset might have too many nodes to visualize clearly. Hence, I recommend running hand-picked taskset `tasksets/ce_test1.json` or `tasksets/ce_test2.json` (will fail at step ii). To change what taskset to run, modify the `file_path` variable in the main section of `flow.py`. You do have to manually change the `frameSize` in `SchedulingDisplay` call to mark the correct frame size in the taskset scheduling chart. To run the program, simply use
