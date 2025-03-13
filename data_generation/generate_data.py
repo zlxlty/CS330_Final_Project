@@ -46,4 +46,4 @@ def generate_data(folderPath, nSets=400, nTasks=15, uStep=0.05):
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
-    generate_data("/".join([parent_dir, "tasksets"]))
+    generate_data(os.path.join(parent_dir, "tasksets"), nTasks=18)

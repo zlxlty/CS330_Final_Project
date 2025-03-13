@@ -97,10 +97,13 @@ def run_test(nTasks, schedulers):
 
 
 if __name__ == "__main__":
-    for nTasks in range(5, 20, 5):
-        run_test(nTasks, [NetworkFlowScheduler, IlpScheduler])
+    # for nTasks in range(5, 26, 5):
+    #     run_test(nTasks, [NetworkFlowScheduler, IlpScheduler])
 
-    for nTasks in range(20, 61, 10):
+    # for nTasks in range(20, 61, 10):
+    #     run_test(nTasks, [NetworkFlowScheduler, IlpScheduler])
+
+    for nTasks in range(4, 19, 2):
         run_test(nTasks, [NetworkFlowScheduler, IlpScheduler])
 
     consolidate_json_files()

@@ -3,11 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def success_rate_v_utilization():
+def success_rate_v_utilization(nTasks=30):
     with open("data.json", "r") as f:
         data = json.load(f)
 
-    data_filtered = [d for d in data if d["nTasks"] == 20]
+    data_filtered = [d for d in data if d["nTasks"] == nTasks]
 
     util_values = [round(x, 2) for x in np.arange(0.1, 1.0, 0.05)]
 
@@ -87,7 +87,7 @@ def success_rate_v_utilization():
     ax.set_xticklabels([f"{u:.2f}" for u in util_values])
     ax.set_xlabel("Utilization")
     ax.set_ylabel("Success Rate")
-    ax.set_title("Success Rate and Execution Time vs. Utilization for nTasks=20")
+    ax.set_title(f"Success Rate and Execution Time vs. Utilization for nTasks={nTasks}")
     ax2 = ax.twinx()
 
     # Plot execution time lines
@@ -112,15 +112,13 @@ def success_rate_v_utilization():
     plt.show()
 
 
-def success_rate_v_task_size():
+def success_rate_v_task_size(utilization=0.85, nTasks_values=range(5, 26, 5)):
 
     # Load the JSON data
     with open("data.json", "r") as f:
         data = json.load(f)
 
-    data_filtered = [d for d in data if round(d["utilization"], 2) == 0.85]
-
-    nTasks_values = list(range(5, 21, 5))
+    data_filtered = [d for d in data if round(d["utilization"], 2) == utilization]
 
     rates_ilp = []
     rates_network = []
@@ -201,7 +199,9 @@ def success_rate_v_task_size():
     ax.set_xticklabels([str(n) for n in nTasks_values])
     ax.set_xlabel("nTasks")
     ax.set_ylabel("Success Rate")
-    ax.set_title("Success Rate and Execution Time vs. nTasks for utilization=0.85")
+    ax.set_title(
+        f"Success Rate and Execution Time vs. nTasks for utilization={utilization}"
+    )
 
     ax2 = ax.twinx()
 
@@ -231,4 +231,5 @@ def success_rate_v_task_size():
     plt.show()
 
 
-success_rate_v_task_size()
+# success_rate_v_utilization(nTasks=60)
+success_rate_v_task_size(utilization=0.5, nTasks_values=range(20, 61, 10))
