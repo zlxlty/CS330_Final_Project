@@ -46,6 +46,7 @@ class IlpScheduler(CyclicSchedulerAlgorithm):
                  or None if no feasible solution is found.
         """
         model: Model = Model("CyclicExecutive")
+        model.setParam("OutputFlag", 0)
 
         # Create decision variables x[i,j,k] (binary) for each valid (i, j, k) combination.
         x: Dict[Tuple[int, int, int], Any] = {}
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "tasksets/0.8/10/ce_test_0.json"
+        file_path = "tasksets/0.5/5/ce_test_214.json"
 
     # Load the task set data from the specified file.
     with open(file_path) as json_data:
@@ -118,28 +119,25 @@ if __name__ == "__main__":
     taskSet = TaskSet(data)
 
     # Print tasks and jobs for verification.
-    taskSet.printTasks()
-    taskSet.printJobs()
+    # taskSet.printTasks()
+    # taskSet.printJobs()
 
     # Create an instance of the ILP scheduler.
     ilp = IlpScheduler(taskSet)
-    print(f"ilp.hyperPeriod: {ilp.hyperPeriod}")
-    print(f"ilp.frameSize: {ilp.frameSize}")
-    print(f"ilp.validFrameSet: {ilp.validFrameMap}")
-
-    intervals = ilp._makeAssignmentDecision()
-    print(intervals)
+    # print(f"ilp.hyperPeriod: {ilp.hyperPeriod}")
+    # print(f"ilp.frameSize: {ilp.frameSize}")
+    # print(f"ilp.validFrameSet: {ilp.validFrameMap}")
 
     # Build the complete schedule from time 0 to 20.
     schedule = ilp.buildSchedule(0, 72)
 
     # Print the schedule intervals (including idle intervals).
-    schedule.printIntervals(displayIdle=True)
+    # schedule.printIntervals(displayIdle=True)
 
     # Validate the schedule by checking worst-case execution times and overall feasibility.
     print("\n// Validating the schedule:")
-    schedule.checkWcets()
-    schedule.checkFeasibility()
+    schedule.validateWcets()
+    schedule.validateDeadlines()
 
     # Display the schedule graphically.
     display = SchedulingDisplay(

@@ -143,7 +143,6 @@ class Schedule(object):
             job_durations[key] += interval.endTime - interval.startTime
 
             if interval.jobCompleted:
-                print(job_durations)
                 if job_durations[key] > cur_task.wcet:
                     return False
 

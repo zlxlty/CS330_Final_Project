@@ -8,7 +8,7 @@ PERIODS = [6, 12, 18, 24]
 choosePeriodFunc = lambda: random.choice(PERIODS)
 
 
-def generate_data(folderPath, nSets=400, nTasks=25, uStep=0.1):
+def generate_data(folderPath, nSets=400, nTasks=60, uStep=0.05):
     assert (
         uStep > 0 and uStep < 1
     ), "Please input a utilization step size in between 0 and 1."
@@ -16,7 +16,7 @@ def generate_data(folderPath, nSets=400, nTasks=25, uStep=0.1):
     curU = uStep
     while curU < 1:
         sets = UUniFastDiscard(nTasks, curU, nSets, 6, choosePeriodFunc)
-        curFolderPath = "/".join([folderPath, str(round(curU, 2))])
+        curFolderPath = "/".join([folderPath, str(round(curU, 3))])
         os.makedirs(curFolderPath, exist_ok=True)
         curFolderPath = "/".join([curFolderPath, str(nTasks)])
         os.makedirs(curFolderPath, exist_ok=True)

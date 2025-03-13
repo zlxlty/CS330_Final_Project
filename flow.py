@@ -98,9 +98,9 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
 
         totalWorkNeeded = sum([job.task.wcet for job in self.taskSet.jobs])
 
-        print(f"maxflow: {self.maxFlow}")
-        print(totalWorkNeeded)
-        print(self.capacityMap)
+        # print(f"maxflow: {self.maxFlow}")
+        # print(totalWorkNeeded)
+        # print(self.capacityMap)
 
         assert isclose(
             totalWorkNeeded, self.maxFlow
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "tasksets/0.8/10/ce_test_0.json"
+        file_path = "tasksets/0.5/5/ce_test_214.json"
 
     # Load the task set data from the specified file.
     with open(file_path) as json_data:
