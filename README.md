@@ -88,9 +88,11 @@ The project workflow is as follows:
     python flow.py
     ```
     You can expect a taskset scheduling chart similar to the following picture for `ce_test1` popping up on your screen.
+    
     <div align="center">
        <img src="example_output/test1_flow_schedule.png" alt="Schedule for ce_test1" width="500">  
     </div>
+
     **`Integer Linear Programming Approach`**  
     **Description:**  
     Alternatively, you can use `ilp.py` to directly construct a non-preemptive schedule. It uses `gurobipy` integer linear programming [solver](https://pypi.org/project/gurobipy/) to find a feasible solution to the ILP corresponding to our job assignment problem.  
