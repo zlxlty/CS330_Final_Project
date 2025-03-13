@@ -1,1 +1,8 @@
-{"Scheduler": "NetworkFlowScheduler", "nTaskSets": 400, "successCount": 1, "utilization": 0.95, "nTasks": 12, "totalTime": 0.0009710839949548244}
+{
+    "Scheduler": "NetworkFlowScheduler",
+    "nTaskSets": 400,
+    "successCount": 1,
+    "utilization": 0.95,
+    "nTasks": 12,
+    "totalTime": 0.0009710839949548244
+}

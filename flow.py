@@ -31,12 +31,12 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
     in order to construct a feasible schedule.
     """
 
-    def __init__(self, taskSet: TaskSet, saveImage=False) -> None:
+    def __init__(self, taskSet: TaskSet, debug=False) -> None:
         """
         Initialize the network flow scheduler.
         """
         super().__init__(taskSet)
-
+        self.debug = debug
         """
         NodeId is a tuple of integers (i, j)
         - For job nodes, i is the task id and j is the job id.
@@ -50,8 +50,6 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
         self.nodeIdToIndex: Dict[Tuple[int, int], int] = {
             v: k for k, v in self.indexToNodeId.items()
         }
-
-        self.saveImage = saveImage
 
     def _makeIndexToNodeIdMap(self) -> Dict[int, Tuple[int, int]]:
         indexToNodeId: Dict[int, Tuple[int, int]] = {0: (-2, 0), 1: (-2, 1)}
@@ -127,7 +125,7 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
                 self.flowMap[self.nodeIdToIndex[(-2, 0)]][frameIndex] -= curFlow
                 self.flowMap[jobIndex][self.nodeIdToIndex[(-2, 1)]] -= curFlow
 
-        if self.saveImage:
+        if self.debug:
             display = NetworkDisplay(12, 10, self)
             display.run(filename=f"./output/flow_reduced.png")
         # sort all preempted jobs by ascending order of their periods
@@ -184,15 +182,15 @@ class NetworkFlowScheduler(CyclicSchedulerAlgorithm):
         try:
             self.runFlowAlgorithm()
 
-            if self.saveImage:
+            if self.debug:
                 display = NetworkDisplay(12, 10, self)
-                display.run(filename=f"./output/flow_1.png")
+                display.run(filename=f"./output/flow_preemptive.png")
 
             self.runBestFitDescentApproximation()
 
-            if self.saveImage:
+            if self.debug:
                 display = NetworkDisplay(12, 10, self)
-                display.run(filename=f"./output/flow_2.png")
+                display.run(filename=f"./output/flow_assigned.png")
         except AssertionError as e:
             print(e)
             return None
@@ -219,7 +217,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "tasksets/0.5/5/ce_test_214.json"
+        file_path = "tasksets/ce_test1.json"
 
     # Load the task set data from the specified file.
     with open(file_path) as json_data:
@@ -233,7 +231,7 @@ if __name__ == "__main__":
     taskSet.printJobs()
 
     # Create an instance of the ILP scheduler.
-    flow = NetworkFlowScheduler(taskSet, saveImage=True)
+    flow = NetworkFlowScheduler(taskSet, debug=True)
     print(f"ilp.hyperPeriod: {flow.hyperPeriod}")
     print(f"ilp.frameSize: {flow.frameSize}")
     print(f"ilp.validFrame Set: {flow.validFrameMap}")
@@ -241,6 +239,10 @@ if __name__ == "__main__":
     print(f"ilp.nodeIdToIndex Set: {flow.nodeIdToIndex}")
 
     schedule = flow.buildSchedule(0, 72)
+
+    if schedule is None:
+        print("No feasible schedule found.")
+        sys.exit(1)
     # # Build the complete schedule from time 0 to 20.
     # schedule = ilp.buildSchedule(0, 20)
 
@@ -256,7 +258,7 @@ if __name__ == "__main__":
     display = SchedulingDisplay(
         width=800,
         height=480,
-        frameSize=6,
+        frameSize=25,
         fps=33,
         scheduleData=schedule,
     )

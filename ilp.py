@@ -13,11 +13,9 @@ from typing import Dict, Tuple, List, Optional, Any
 from taskset import *
 from scheduleralgorithm import *
 from CyclicSchedulerAlgorithm import *
-from schedule import ScheduleInterval, Schedule
 from display import SchedulingDisplay
 
 from gurobipy import Model, GRB
-from math import lcm, gcd
 from collections import defaultdict
 
 
@@ -30,11 +28,12 @@ class IlpScheduler(CyclicSchedulerAlgorithm):
     in order to construct a feasible schedule.
     """
 
-    def __init__(self, taskSet: TaskSet) -> None:
+    def __init__(self, taskSet: TaskSet, debug=False) -> None:
         """
         Initialize the ILP scheduler.
         """
         super().__init__(taskSet)
+        self.debug = debug
 
     def _makeAssignmentDecision(self) -> Optional[Dict[int, List[Job]]]:
         """
@@ -46,7 +45,7 @@ class IlpScheduler(CyclicSchedulerAlgorithm):
                  or None if no feasible solution is found.
         """
         model: Model = Model("CyclicExecutive")
-        model.setParam("OutputFlag", 0)
+        model.setParam("OutputFlag", 1 if self.debug else 0)
 
         # Create decision variables x[i,j,k] (binary) for each valid (i, j, k) combination.
         x: Dict[Tuple[int, int, int], Any] = {}
@@ -109,7 +108,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "tasksets/0.5/5/ce_test_214.json"
+        file_path = "tasksets/ce_test2.json"
 
     # Load the task set data from the specified file.
     with open(file_path) as json_data:
@@ -129,7 +128,11 @@ if __name__ == "__main__":
     # print(f"ilp.validFrameSet: {ilp.validFrameMap}")
 
     # Build the complete schedule from time 0 to 20.
-    schedule = ilp.buildSchedule(0, 72)
+    schedule = ilp.buildSchedule(0, 20)
+
+    if schedule is None:
+        print("No feasible schedule found.")
+        sys.exit(1)
 
     # Print the schedule intervals (including idle intervals).
     # schedule.printIntervals(displayIdle=True)
@@ -141,6 +144,6 @@ if __name__ == "__main__":
 
     # Display the schedule graphically.
     display = SchedulingDisplay(
-        width=800, height=480, fps=33, frameSize=6, scheduleData=schedule
+        width=800, height=480, fps=33, frameSize=2, scheduleData=schedule
     )
     display.run()
