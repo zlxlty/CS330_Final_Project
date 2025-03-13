@@ -175,7 +175,7 @@ cython_debug/
 
 # testing dataset
 tasksets/
-output/*
+output/
 
 # MacOS
 .DS_Store
